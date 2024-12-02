@@ -1,0 +1,43 @@
+.month-view {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .days-of-week {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    width: 100%;
+    text-align: center;
+    font-weight: bold;
+  }
+  
+  .day-header {
+    padding: 10px 0;
+    background-color: #f0f0f0;
+  }
+  
+  .month-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    width: 100%;
+    height: 500px;
+  }
+  
+  .month-day {
+    text-align: center;
+    padding: 10px;
+    border: 1px solid #ddd;
+  }
+  
+  .month-day.highlight {
+    background-color: #cce5ff;
+    border-color: #007bff;
+    color: #007bff;
+  }
+  
+  
+  .month-day span {
+    font-size: 16px;
+    font-weight: bold;
+  }

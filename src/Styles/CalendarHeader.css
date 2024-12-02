@@ -1,0 +1,18 @@
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    padding: 20px;
+    background-color: #ffffff;
+  
+  }
+  
+  .header-left {
+    font-size: 24px;
+    font-weight: bold;
+  }
+  
+  .header-right select {
+    margin-left: 10px;
+    padding: 5px;
+    font-size: 16px;
+  }

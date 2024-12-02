@@ -1,0 +1,44 @@
+.day-view {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .day-time-slots {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+  
+  .day-time-slot {
+    display: flex;
+    border-right: 1px solid #ddd;
+    font-size: 14px;
+    color: rgb(0, 123, 255);
+  
+  }
+  
+  .day-time-slot span {
+    position: relative;
+    bottom: 5px;
+    margin-right: 10px;
+  }
+  
+  .day-time-slot:nth-child(1) span {
+    position: relative;
+    bottom: 3px;
+  }
+  
+  .day-slot-content {
+    border-left: 1px solid #ddd;
+  }
+  
+  .day-slot-content:nth-child(2) {
+    border-top: 1px solid #ddd;
+  }
+  
+  .day-slot-content {
+    flex: 1;
+    height: 70px;
+    border-bottom: 1px solid #ddd;
+  }

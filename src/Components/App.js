@@ -1,12 +1,159 @@
-import React, { useState } from 'react';
+import React, { useState, createContext, useEffect } from 'react';
 import '../index.css';
-import Event from './Event'
+import CalendarHeader from './CalendarHeader';
+import CalendarNav from './CalendarNav';
+import DayView from './DayView';
+import WeekView from './WeekView';
+import MonthView from './MonthView';
+import YearView from './YearView';
+
+export const CalendarContext = createContext();
 
 const App = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [view, setView] = useState('week'); // Default view is week
+  const [view, setView] = useState('week');
+  const [groupedEvents, setGroupedEvents] = useState([]);
+  const [selectedEventDetails, setSelectedEventDetails] = useState(null);
 
-  // Date handling functions for previous and next navigation
+  const fetchData = async () => {
+    try {
+      // Fetch JSON data directly from the specified path
+      const response = await fetch('/calendar/calendarfromtoenddate.json');
+      const data = await response.json();
+      
+      const events = data.map((item) => {
+        const jobRequestTitle = item.job_id.jobRequest_Title
+          .split(' ')
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+  
+        const firstName = item.user_det.handled_by?.firstName || 'Unknown';
+  
+              const interviewWith =
+                item.user_det.candidate.candidate_firstName.charAt(0).toUpperCase() +
+                item.user_det.candidate.candidate_firstName.slice(1).toLowerCase() + ' ' +
+                item.user_det.candidate.candidate_lastName.charAt(0).toUpperCase() +
+                item.user_det.candidate.candidate_lastName.slice(1).toLowerCase();
+              ;
+  
+
+
+        const formatTime = (timeString) => {
+          if (!timeString) return 'Invalid Time';
+          try {
+            const timePart = timeString.split('T')[1].split('+')[0];
+            const [hours, minutes] = timePart.split(':').map(Number);
+            const period = hours >= 12 ? 'PM' : 'AM';
+            const formattedHours = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours;
+            
+            if (minutes === 0) {
+              return `${formattedHours.toString().padStart(2, '0')} ${period}`;
+            }
+            return `${formattedHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${period}`;
+          } catch (error) {
+            console.error('Error parsing time:', error, 'Input:', timeString);
+            return 'Invalid Time';
+          }
+        };
+        
+        const formatTimeRange = (startTimeString, endTimeString) => {
+          const startTime = formatTime(startTimeString);
+          const endTime = formatTime(endTimeString);
+        
+          return startTime && endTime ? `${startTime} - ${endTime}` : 'Time Not Available';
+        };
+        
+        const timeRange = formatTimeRange(item.start, item.end);
+        
+
+        const date = item.start.split('T')[0];
+  
+        return {
+          jobRequestTitle,
+          date,
+          firstName,
+          time: timeRange,
+          start: item.start,
+          userRole: item.user_det.handled_by?.userRole || '',
+          interviewWith
+        };
+      });
+  
+      // Group events
+      const groupedEvents = groupEvents(events);
+      setGroupedEvents(groupedEvents);
+    } catch (error) {
+      console.error('Error processing data:', error);
+    }
+  };
+  
+
+  const groupEvents = (events) => {
+    const groups = [];
+    events.forEach((event) => {
+      const existingGroup = groups.find(
+        (group) => group.time === event.time && group.date === event.date
+      );
+
+      if (existingGroup) {
+        existingGroup.events.push(event);
+      } else {
+        groups.push({
+          time: event.time,
+          date: event.date,
+          events: [event],
+          isVisible: false,
+        });
+      }
+    });
+
+    return groups;
+  };
+  
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const toggleGroupVisibility = (groupIndex) => {
+    setGroupedEvents((prevGroupedEvents) =>
+      prevGroupedEvents.map((group, index) =>
+        index === groupIndex ? { ...group, isVisible: !group.isVisible } : group
+      )
+    );
+  };
+
+  const handleBoxClick = (event) => {
+    const interviewWith = event.interviewWith;
+    const position = event.jobRequestTitle;
+    const createdBy = event.userRole
+      .split('_')
+      .map((word, index) =>
+        index === 0
+          ? word.charAt(0).toUpperCase() + word.charAt(1).toUpperCase() + word.slice(2).toLowerCase() 
+          : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() 
+      )
+      .join(' ');
+
+    const interviewDate = event.date;
+    const formattedDate = `${interviewDate.split('-')[2]}th ${new Date(interviewDate).toLocaleString('default', {
+      month: 'short',
+    })} ${interviewDate.split('-')[0]}`;
+    const interviewTime = event.time;
+
+    setSelectedEventDetails({
+      position,
+      createdBy,
+      interviewDate: formattedDate,
+      interviewTime,
+      interviewWith
+    });
+
+    setGroupedEvents((prevGroupedEvents) =>
+      prevGroupedEvents.map((group) => ({ ...group, isVisible: false }))
+    );
+  };
+
   const handlePrev = () => {
     if (view === 'day') {
       const prevDay = new Date(selectedDate);
@@ -51,224 +198,22 @@ const App = () => {
     setView(newView);
   };
 
-  const renderDayView = () => {
-    const timeSlots = [];
-    const dayDate = selectedDate;
-    for (let i = 10; i <= 19; i++) {
-      const displayHour = i > 12 ? i - 12 : i;
-      const formattedHour = displayHour < 10 ? `0${displayHour}` : displayHour;
-      const amPm = i < 12 ? 'AM' : 'PM';
-
-      timeSlots.push(
-        <div className="day-time-slot" key={i}>
-          <span>{formattedHour} {amPm}</span>
-          <div className="day-slot-content"></div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="day-view">
-        <h2>{dayDate.toDateString()}</h2>
-        <div className="day-time-slots">
-          {timeSlots}
-        </div>
-      </div>
-    );
-  };
-
-
-  const renderWeekView = () => {
-    const weekStart = new Date(selectedDate);
-    weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7));
-
-    const weekDates = [];
-    for (let i = 0; i < 7; i++) {
-      const day = new Date(weekStart);
-      day.setDate(weekStart.getDate() + i);
-      weekDates.push(day);
-    }
-
-    return (
-      <div className="week-view">
-        <div className="week-day-slots">
-
-          <div className="week-time-column">
-            {Array.from({ length: 10 }, (_, i) => {
-              const hour = 10 + i;
-              const displayHour = hour > 12 ? hour - 12 : hour;
-              const amPm = hour < 12 || hour === 24 ? 'AM' : 'PM';
-              const formattedHour = displayHour < 10 ? `0${displayHour}` : displayHour;
-              return (
-                <div key={i} className="week-time-slot">
-                  <span>
-                    {formattedHour} {amPm}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-
-
-          {weekDates.map((date) => {
-            const formattedDate = `${date.getDate().toString().padStart(2, '0')} ${date.toLocaleString('default', { month: 'short' })}`;
-
-            return (
-              <div key={date} className="week-day">
-
-                <span className="week-day-label">
-                  {formattedDate}
-                </span>
-                {formattedDate === "29 Aug" && <Event />}
-
-                <span className="week-day-label">
-                  {date.toLocaleString('default', { weekday: 'long' })}
-                </span>
-
-                <div className="week-day-time-slots">
-
-                  {Array.from({ length: 10 }, (_, i) => (
-                    <div key={i} className="week-event-slot">
-
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
-
-  const renderMonthView = () => {
-    const monthStart = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
-    const monthEnd = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
-    const monthDates = [];
-    const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-    // Fill the month dates
-    for (let i = 0; i < monthEnd.getDate(); i++) {
-      const day = new Date(monthStart);
-      day.setDate(i + 1);
-      monthDates.push(day);
-    }
-
-    return (
-      <div className="month-view">
-        <h2>{selectedDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</h2>
-
-        {/* Row for days of the week */}
-        <div className="days-of-week">
-          {daysOfWeek.map((day) => (
-            <div key={day} className="day-header">
-              {day}
-            </div>
-          ))}
-        </div>
-
-        {/* Grid for dates */}
-        <div className="month-grid">
-          {monthDates.map((date) => (
-            <div
-              key={date}
-              className={`month-day ${date.getDate() === selectedDate.getDate() ? 'highlight' : ''}`}
-            >
-              <span>{date.getDate()}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-
-  const renderYearView = () => {
-    const yearStart = new Date(selectedDate.getFullYear(), 0, 1);
-    const months = [];
-
-    for (let i = 0; i < 12; i++) {
-      const month = new Date(yearStart);
-      month.setMonth(i);
-      months.push(month);
-    }
-
-    return (
-      <div className="year-view">
-        <h2>{selectedDate.getFullYear()}</h2>
-        <div className="year-months">
-          {months.map((month) => (
-            <div key={month} className="year-month">
-              <span>{month.toLocaleString('default', { month: 'short' })}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  const renderCalendarView = () => {
-    switch (view) {
-      case 'day':
-        return renderDayView();
-      case 'week':
-        return renderWeekView();
-      case 'month':
-        return renderMonthView();
-      case 'year':
-        return renderYearView();
-      default:
-        return renderMonthView();
-    }
-  };
-
   return (
-    <div className="calendar-app">
-
-      <div className="calendar-header">
-        <div className="header-left">Your Todo's</div>
-        <div className="header-right">
-          <select
-            value={selectedDate.getMonth()}
-            onChange={(e) => setSelectedDate(new Date(selectedDate.getFullYear(), e.target.value, selectedDate.getDate()))}
-          >
-            {Array.from({ length: 12 }, (_, i) => (
-              <option key={i} value={i}>
-                {new Date(0, i).toLocaleString('default', { month: 'long' })}
-              </option>
-            ))}
-          </select>
-          <select
-            value={selectedDate.getFullYear()}
-            onChange={(e) => setSelectedDate(new Date(e.target.value, selectedDate.getMonth(), selectedDate.getDate()))}
-          >
-            {Array.from({ length: 11 }, (_, i) => (
-              <option key={i} value={2020 + i}>
-                {2020 + i}
-              </option>
-            ))}
-          </select>
+    
+    <CalendarContext.Provider value={{ selectedDate, setSelectedDate, view, setView, groupedEvents, setGroupedEvents, toggleGroupVisibility, selectedEventDetails, setSelectedEventDetails, handleBoxClick }}>
+      <div className="calendar-app">
+        <CalendarHeader />
+        <CalendarNav handlePrev={handlePrev} handleNext={handleNext} handleChangeView={handleChangeView} />
+        <div className="calendar-view">
+          {view === 'day' && <DayView />}
+          {view === 'week' && <WeekView />}
+          {view === 'month' && <MonthView />}
+          {view === 'year' && <YearView />}
         </div>
       </div>
-      <div className="calendar-nav">
-        <div className='navigators'>
-          <button onClick={handlePrev}><p className='left-arrow'></p></button>
-          <button onClick={handleNext}><p className='right-arrow'></p></button>
-        </div>
-        <div className="nav-buttons">
-          <button onClick={() => handleChangeView('day')}>Today</button>
-          <button onClick={() => handleChangeView('week')}>Week</button>
-          <button onClick={() => handleChangeView('month')}>Month</button>
-          <button onClick={() => handleChangeView('year')}>Year</button>
-        </div>
-
-      </div>
-      <div className="calendar-view">{renderCalendarView()}</div>
-    </div>
+    </CalendarContext.Provider>
+    
   );
-
 };
 
 export default App;
-
