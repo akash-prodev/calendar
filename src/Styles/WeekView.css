@@ -194,11 +194,12 @@
 @media (max-width: 576px) {
   .event-details{
     left: 50px;
+    top: 500px;
     z-index: 1;
   }
 
   .group-style{
-    left: 100px;
+    left: 210px;
   }
 
   .event-group{

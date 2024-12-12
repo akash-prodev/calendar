@@ -14,30 +14,25 @@ const App = () => {
   const [view, setView] = useState('week');
   const [groupedEvents, setGroupedEvents] = useState([]);
   const [selectedEventDetails, setSelectedEventDetails] = useState(null);
+  const [groupByDay, setgroupByDay] = useState(null)
 
   const fetchData = async () => {
     try {
       // Fetch JSON data directly from the specified path
       const response = await fetch('/calendar/calendarfromtoenddate.json');
       const data = await response.json();
-      
       const events = data.map((item) => {
         const jobRequestTitle = item.job_id.jobRequest_Title
           .split(' ')
           .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
           .join(' ');
-  
         const firstName = item.user_det.handled_by?.firstName || 'Unknown';
-  
               const interviewWith =
                 item.user_det.candidate.candidate_firstName.charAt(0).toUpperCase() +
                 item.user_det.candidate.candidate_firstName.slice(1).toLowerCase() + ' ' +
                 item.user_det.candidate.candidate_lastName.charAt(0).toUpperCase() +
                 item.user_det.candidate.candidate_lastName.slice(1).toLowerCase();
               ;
-  
-
-
         const formatTime = (timeString) => {
           if (!timeString) return 'Invalid Time';
           try {
@@ -45,7 +40,6 @@ const App = () => {
             const [hours, minutes] = timePart.split(':').map(Number);
             const period = hours >= 12 ? 'PM' : 'AM';
             const formattedHours = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours;
-            
             if (minutes === 0) {
               return `${formattedHours.toString().padStart(2, '0')} ${period}`;
             }
@@ -55,18 +49,16 @@ const App = () => {
             return 'Invalid Time';
           }
         };
-        
         const formatTimeRange = (startTimeString, endTimeString) => {
           const startTime = formatTime(startTimeString);
           const endTime = formatTime(endTimeString);
         
           return startTime && endTime ? `${startTime} - ${endTime}` : 'Time Not Available';
         };
-        
         const timeRange = formatTimeRange(item.start, item.end);
-        
-
         const date = item.start.split('T')[0];
+        const meetingLink = item.link;
+        
   
         return {
           jobRequestTitle,
@@ -75,9 +67,13 @@ const App = () => {
           time: timeRange,
           start: item.start,
           userRole: item.user_det.handled_by?.userRole || '',
-          interviewWith
+          interviewWith,
+          meetingLink
         };
       });
+
+      const groupByDay = groupByDayEvents(events);
+      setgroupByDay(groupByDay);
   
       // Group events
       const groupedEvents = groupEvents(events);
@@ -87,6 +83,27 @@ const App = () => {
     }
   };
   
+  const groupByDayEvents = (events) => {
+    const groupDay = [];
+    events.forEach((event) => {
+      const existingGroup = groupDay.find(
+        (group) => group.date === event.date
+      );
+
+      if (existingGroup) {
+        existingGroup.events.push(event);
+      } else {
+        groupDay.push({
+          time: event.time,
+          date: event.date,
+          events: [event],
+          isVisible: false,
+        });
+      }
+    });
+
+    return groupDay;
+  };
 
   const groupEvents = (events) => {
     const groups = [];
@@ -140,18 +157,25 @@ const App = () => {
       month: 'short',
     })} ${interviewDate.split('-')[0]}`;
     const interviewTime = event.time;
+    const meetingLink = event.meetingLink;
+    
 
     setSelectedEventDetails({
       position,
       createdBy,
       interviewDate: formattedDate,
       interviewTime,
-      interviewWith
+      interviewWith,
+      meetingLink
     });
 
     setGroupedEvents((prevGroupedEvents) =>
       prevGroupedEvents.map((group) => ({ ...group, isVisible: false }))
     );
+
+    setgroupByDay((prevGroupByDayEvents) =>
+      prevGroupByDayEvents.map((group) => ({ ...group, isVisible: false }))
+      );
   };
 
   const handlePrev = () => {
@@ -200,7 +224,8 @@ const App = () => {
 
   return (
     
-    <CalendarContext.Provider value={{ selectedDate, setSelectedDate, view, setView, groupedEvents, setGroupedEvents, toggleGroupVisibility, selectedEventDetails, setSelectedEventDetails, handleBoxClick }}>
+    <CalendarContext.Provider value={{ selectedDate, setSelectedDate, view, setView, groupedEvents, 
+    setGroupedEvents, toggleGroupVisibility, selectedEventDetails, setSelectedEventDetails, handleBoxClick, groupByDay, setgroupByDay }}>
       <div className="calendar-app">
         <CalendarHeader />
         <CalendarNav handlePrev={handlePrev} handleNext={handleNext} handleChangeView={handleChangeView} />

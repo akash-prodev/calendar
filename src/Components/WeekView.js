@@ -195,7 +195,11 @@ const WeekView = () => {
           </div>
           <div className='pics'>
           <img src={`${process.env.PUBLIC_URL}/meet.jpg`} alt="google meet" />
-            <button>Join</button>
+            <button
+              onClick={()=>{
+               window.open(selectedEventDetails.meetingLink, "_blank");
+               }}
+            >Join</button>
           </div>
         </div>
       )}

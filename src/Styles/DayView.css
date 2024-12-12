@@ -14,14 +14,13 @@
     display: flex;
     border-right: 1px solid #ddd;
     font-size: 14px;
-    color: rgb(0, 123, 255);
-  
   }
   
   .day-time-slot span {
     position: relative;
     bottom: 5px;
     margin-right: 10px;
+    color: rgb(0, 123, 255);
   }
   
   .day-time-slot:nth-child(1) span {
@@ -42,3 +41,47 @@
     height: 70px;
     border-bottom: 1px solid #ddd;
   }
+
+  /* Styles for events */
+.grouped{
+  width: 150px;
+  height: 90%;
+  font-size: 11px;
+  margin: 2px;
+  border-radius: 2px;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.5);
+  border-left: 10px solid rgb(0, 123, 255);
+  margin-left: 25px;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+}
+
+.grouped button{
+  background-color: gold;
+  color: black;
+  font-size: inherit;
+  width: 20px;
+  height: 20px;
+  border-radius: 100%;
+  padding: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+.day-group-style{
+  position: absolute;
+  left: 250px;
+}
+
+.day-event-detail-box{
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.5);
+  margin: 5px;
+  background-color: rgb(0, 123, 255);
+  color: white;
+}
+
+.day-event-detail-box > h4, .day-event-detail-box > p{
+  padding-left: 5px;
+}
